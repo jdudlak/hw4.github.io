@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Markov Chain Learning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&family=Space+Mono&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #fdf8f2;
+    --text: #1a1510;
+    --muted: #7a6a5a;
+    --accent: #c84b18;
+    --border: #e8ddd0;
+    --code-bg: #f0ebe3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lora', Georgia, serif;
+    line-height: 1.75;
+    padding: 0 1rem;
+  }
+  header {
+    max-width: 660px; margin: 3.5rem auto 2.5rem;
+    border-top: 2px solid var(--text);
+    padding-top: 1.5rem;
+  }
+  .back {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); text-decoration: none;
+    margin-bottom: 1.25rem;
+  }
+  .back:hover { color: var(--accent); }
+  h1 {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    line-height: 1.25; font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .byline {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem; color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  article {
+    max-width: 660px; margin: 0 auto;
+    padding-bottom: 5rem;
+  }
+  p { margin: 1.2rem 0; font-size: 0.975rem; }
+  h2 {
+    font-size: 1rem; margin: 2rem 0 0.4rem;
+    font-weight: 700; color: var(--text);
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  code {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78em; background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    color: var(--accent);
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 1rem; overflow-x: auto; margin: 1.2rem 0;
+    font-family: 'Space Mono', monospace; font-size: 0.72rem;
+    line-height: 1.6;
+  }
+  .footnote {
+    font-size: 0.72rem; color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 3rem; padding-top: 1rem;
+    font-family: 'Space Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="back">← Back to Composer</a>
+  <h1>Markov Chain Music Generation</h1>
+</header>
+
+<article>
+
+<p>
+  A Markov chain for music is a lookup table: given the last <em>n</em> notes played, sample the
+  next note according to how often each transition appeared in the training data. The "order" of the
+  chain is how many previous notes constitute the state.
+</p>
+
+<h2>Training</h2>
+
+<p>
+  Training scans the input sequence and counts every n-gram transition. For a first-order chain on
+  "Twinkle Twinkle," you end up with a table like:
+</p>
+
+<pre>transitions["[60]"] = { 60: 2, 67: 4, 69: 2 }
+// from C4: go to C4 (25%), G4 (50%), or A4 (25%)</pre>
+
+<p>
+  Generation starts from a random known state and repeatedly samples the next note, shifting the
+  state window forward each step. When a dead-end state is hit (no outgoing transitions), the
+  implementation falls back to a random known state.
+</p>
+
+<h2>Orders</h2>
+
+<p>
+  Order 1 output sounds reasonable but has no tangible structure. In other words, each note follows
+  naturally from the one before, but there's no sense of direction. Order 2 or 3 sounds noticeably
+  more structured. The chain still has no model of phrases or keys, but a larger context window is
+  enough to make it more pleasing to the ear.
+  Higher order also means more training data is required. With only about 42 notes in Twinkle Twinkle,
+  a 4th-order chain has so many unique states that most only appear once. 
+</p>
+
+<h2>Difficulties</h2>
+
+<p>
+  I found audio scheduling to be the most difficult part of this process, as Web Audio API notes must be queued ahead of time via <code>AudioContext.currentTime</code>,
+  not standard time. Making the "stop" button work correctly was also difficult given that all oscillators are scheduled upfront, so
+  you have to explicitly call <code>.stop()</code> on each one to cut playback immediately.
+</p>
+
+<h2>Conclusion</h2>
+
+<p>
+  The transition matrix visualization reveals that the chain
+  learns the tonal structure of the input purely from statistics. As the chain has no built-in notion of scales or keys, the patterns in the matrix come entirely from the training data.
+</p>
+
+</article>
+</body>
+</html>
